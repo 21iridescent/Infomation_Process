@@ -4,7 +4,7 @@ from openai import OpenAI
 import openpyxl
 
 # 设置页面
-st.set_page_config(page_title="GPT-Excel Integration", page_icon=":rocket:")
+st.set_page_config(page_title="法律文书批量处理助手", page_icon=":rocket:")
 
 #设置标题
 st.title("法律文书批量处理助手")
@@ -36,8 +36,20 @@ if uploaded_file:
     df = pd.read_excel(uploaded_file)
     column_to_process = st.selectbox("选择要处理的列", df.columns)
 
+    # Prompt模板列表
+    prompt_templates = {
+        "Template 1": "【人设】作为专业的语言翻译家，【任务】请将以下新闻内容翻译成英文。",
+        "Template 2": "【人设】作为经验丰富的法律顾问，【任务】请从以下文本中提取关键的法律术语。",
+        "Template 3": "【人设】作为资深的新闻编辑，【任务】请对以下新闻内容进行总结，并提炼出主要观点。",
+        # 根据需要添加更多模板
+    }
+
+    # 选择Prompt模板
+    template_key = st.selectbox("选择Prompt模板", options=list(prompt_templates.keys()))
+
     # 输入Prompt内容，展示默认提示
-    user_prompt = st.text_area("输入ChatGPT提示内容：【人设】+ 【具体任务】")
+    user_prompt = st.text_area("输入ChatGPT提示内容：", value=prompt_templates[template_key])
+
 
     # 定义一个函数来处理数据
     def process_data(df, column_to_process, user_prompt, num_rows=None):
@@ -62,7 +74,8 @@ if uploaded_file:
             progress_bar.progress(progress)
 
             # 组合prompt和Excel中的内容
-            combined_prompt = f"{user_prompt}{row[column_to_process]}"
+            combined_prompt = "user_prompt" + "/t" + "#待处理的文本内容：" + {row[column_to_process]}
+
             print(combined_prompt)
             completion = client.chat.completions.create(
                 model=model,
