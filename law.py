@@ -99,7 +99,7 @@ if uploaded_file:
                 st.write(completion.choices[0].message.content)
 
         # 将结果保存到DataFrame
-        df['GPT-3 Response'] = results
+        df['大模型处理结果'] = results
 
         # 完成后将进度条设置为100%
         progress_bar.progress(100)
