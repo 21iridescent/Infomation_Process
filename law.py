@@ -94,7 +94,7 @@ if uploaded_file:
                 results.append("Error: Unable to process this row.")
                 continue
 
-            # Only display the last 10 outputs --
+            # Only display the last 10 outputs
             if total_rows - index <= 10:
                 with st.expander(f"行 {index + 1} 的输出:"):
                     st.write(combined_prompt)
