@@ -23,7 +23,7 @@ available_models = [
 
 
 # 在页面顶部添加模型选择框
-st.info("先用Free的模型测试一下，再选择GPT4或者其他贵的模型！！！")
+st.info("先用Free的模型测试一下，再选择GPT4或者其他贵的模型！模型价格you")
 
 model = st.selectbox("选择模型", available_models)
 
@@ -100,8 +100,8 @@ if uploaded_file:
                     st.write(combined_prompt)
                     st.markdown("---")
                     # Check if 'completion' has 'choices' and if 'choices' is not empty
-                    if completion['choices'] and completion['choices'][0]['message']['content']:
-                        output_content = completion['choices'][0]['message']['content']
+                    if completion['choices']:
+                        output_content = completion.choices[0].message.content
                     else:
                         output_content = "Error: No completion available or invalid response structure."
 
