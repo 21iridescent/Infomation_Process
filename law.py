@@ -15,10 +15,10 @@ api_key = st.text_input("输入API Key")
 # 设置可用模型列表
 available_models = [
     "mistralai/mistral-7b-instruct:free",
-    "huggingfaceh4/zephyr-7b-beta:free",
     "anthropic/claude-3-haiku:beta",
+    "anthropic/claude-3-sonnet:beta",
     "openai/gpt-4-turbo",
-    "anthropic/claude-3-sonnet:beta"
+    "anthropic/claude-3-opus:beta"
 ]
 
 
@@ -99,8 +99,13 @@ if uploaded_file:
                 with st.expander(f"行 {index + 1} 的输出:"):
                     st.write(combined_prompt)
                     st.markdown("---")
-                    st.write(completion.choices[
-                                 0].message.content)
+                    # Check if 'completion' has 'choices' and if 'choices' is not empty
+                    if completion['choices'] and completion['choices'][0]['message']['content']:
+                        output_content = completion['choices'][0]['message']['content']
+                    else:
+                        output_content = "Error: No completion available or invalid response structure."
+
+                    st.write(output_content)
 
             # Update the progress bar
             progress = int((index + 1) / total_rows * 100)
