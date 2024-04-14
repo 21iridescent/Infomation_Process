@@ -53,55 +53,63 @@ if uploaded_file:
 
     # 定义一个函数来处理数据
     def process_data(df, column_to_process, user_prompt, num_rows=None):
-        # 初始化OpenAI客户端
-        client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
-        )
+        # Initialize OpenAI client
+        try:
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=api_key,
+            )
+        except Exception as e:
+            st.error(f"Failed to initialize OpenAI client: {e}")
+            return
 
-        # 设置进度条
+        # Set up progress bar
         progress_bar = st.progress(0)
 
-        # 如果指定了num_rows，仅处理指定数量的行
+        # If num_rows is specified, only process that many rows
         if num_rows is not None:
             df = df.head(num_rows)
 
         total_rows = len(df)
         results = []
         for index, row in df.iterrows():
-            # 更新进度条
-            progress = int((index + 1) / total_rows * 100)
-            progress_bar.progress(progress)
-
-            # 组合prompt和Excel中的内容 "user_prompt" + "/t" + "#待处理的文本内容：" + {row[column_to_process]}
+            # Combine prompt and content from Excel "user_prompt" + "/t" + "#待处理的文本内容：" + {row[column_to_process]}
             combined_prompt = f"##{user_prompt}\n\n ##待处理的文本: {row[column_to_process]}"
 
             print(combined_prompt)
-            completion = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": combined_prompt,
-                    },
-                ],
-            )
-            # 保存模型输出
-            results.append(completion.choices[0].message.content)
+            try:
+                completion = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": combined_prompt,
+                        },
+                    ],
+                )
+                # Save model output
+                results.append(completion.choices[0].message.content)
+            except Exception as e:
+                st.error(f"API request failed on row {index + 1}: {e}")
+                results.append("Error: Unable to process this row.")
+                continue
 
-            # 使用expander组件显示当前输出，使其可折叠
-            with st.expander(f"行 {index + 1} 的输出:"):
-                # 显示输入内容
-                st.write(combined_prompt)
-                #分割线
-                st.markdown("---")
-                # 显示模型输出
-                st.write(completion.choices[0].message.content)
+            # Only display the last 10 outputs
+            if total_rows - index <= 10:
+                with st.expander(f"行 {index + 1} 的输出:"):
+                    st.write(combined_prompt)
+                    st.markdown("---")
+                    st.write(completion.choices[
+                                 0].message.content if 'choices' in completion else "Error: No completion available.")
 
-        # 将结果保存到DataFrame
+            # Update the progress bar
+            progress = int((index + 1) / total_rows * 100)
+            progress_bar.progress(progress)
+
+        # Append results to DataFrame
         df['大模型处理结果'] = results
 
-        # 完成后将进度条设置为100%
+        # Once completed, set progress bar to 100%
         progress_bar.progress(100)
 
         return df
@@ -125,20 +133,21 @@ if uploaded_file:
     # 处理全部数据按钮
     if st.button("测试完了！全部处理（贵贵贵）！"):
         if user_prompt:
-            # 处理全部数据
-            processed_df = process_data(df, column_to_process, user_prompt)
-
-            # 导出到Excel
-            output_filename = 'processed_output.xlsx'
-            processed_df.to_excel(output_filename, index=False)
-
-            # 提供下载链接
-            st.success("处理完成！")
-            with open(output_filename, "rb") as file:
-                st.download_button(label="下载处理后的Excel文件",
-                                   data=file,
-                                   file_name=output_filename,
-                                   mime="application/vnd.ms-excel")
+            # Process all data
+            try:
+                processed_df = process_data(df, column_to_process, user_prompt)
+                output_filename = 'processed_output.xlsx'
+                processed_df.to_excel(output_filename, index=False)
+            except Exception as e:
+                st.error(f"Failed to save the processed data: {e}")
+            else:
+                # Provide a download link
+                st.success("处理完成！")
+                with open(output_filename, "rb") as file:
+                    st.download_button(label="下载处理后的Excel文件",
+                                       data=file,
+                                       file_name=output_filename,
+                                       mime="application/vnd.ms-excel")
         else:
             st.error("请输入提示内容。")
 else:
