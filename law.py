@@ -100,7 +100,7 @@ if uploaded_file:
                     st.write(combined_prompt)
                     st.markdown("---")
                     # Check if 'completion' has 'choices' and if 'choices' is not empty
-                    if completion['choices']:
+                    if completion.choices[0].message.content:
                         output_content = completion.choices[0].message.content
                     else:
                         output_content = "Error: No completion available or invalid response structure."
