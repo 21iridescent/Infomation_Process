@@ -100,7 +100,7 @@ if uploaded_file:
                     st.write(combined_prompt)
                     st.markdown("---")
                     st.write(completion.choices[
-                                 0].message.content if 'choices' in completion else "Error: No completion available.")
+                                 0].message.content)
 
             # Update the progress bar
             progress = int((index + 1) / total_rows * 100)
