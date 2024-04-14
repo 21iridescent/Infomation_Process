@@ -36,8 +36,8 @@ if uploaded_file:
     df = pd.read_excel(uploaded_file)
     column_to_process = st.selectbox("选择要处理的列", df.columns)
 
-    # 输入GPT-3提示内容
-    user_prompt = st.text_area("输入ChatGPT提示内容")
+    # 输入Prompt内容，展示默认提示
+    user_prompt = st.text_area("输入ChatGPT提示内容：【人设】+ 【具体任务】")
 
     # 定义一个函数来处理数据
     def process_data(df, column_to_process, user_prompt, num_rows=None):
