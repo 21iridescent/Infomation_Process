@@ -74,7 +74,7 @@ if uploaded_file:
             progress_bar.progress(progress)
 
             # 组合prompt和Excel中的内容 "user_prompt" + "/t" + "#待处理的文本内容：" + {row[column_to_process]}
-            combined_prompt = f"{user_prompt}\t#待处理的文本内容：{row[column_to_process]}"
+            combined_prompt = f"##{user_prompt}\n\n ##待处理的文本: {row[column_to_process]}"
 
             print(combined_prompt)
             completion = client.chat.completions.create(
