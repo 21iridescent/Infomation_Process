@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from openai import OpenAI
 import openpyxl
+import os
 
 # 设置页面
 st.set_page_config(page_title="法律文书批量处理助手", page_icon=":rocket:")
@@ -17,6 +18,7 @@ available_models = [
     "mistralai/mistral-7b-instruct:free",
     "anthropic/claude-3-haiku:beta",
     "anthropic/claude-3-sonnet:beta",
+    "meta-llama/llama-3-70b-instruct",
     "openai/gpt-4-turbo",
     "anthropic/claude-3-opus:beta"
 ]
@@ -32,6 +34,9 @@ uploaded_file = st.file_uploader("上传Excel文件", type=["xlsx"])
 
 # 如果文件已上传，让用户选择要处理的列
 if uploaded_file:
+    # get the file name
+    uploaded_file_name = uploaded_file.name
+
     # 读取Excel文件
     df = pd.read_excel(uploaded_file)
     column_to_process = st.selectbox("选择要处理的列", df.columns)
@@ -66,60 +71,76 @@ if uploaded_file:
         # Set up progress bar
         progress_bar = st.progress(0)
 
+        # Initialize download button placeholder
+        download_button_placeholder = st.empty()
+
         # If num_rows is specified, only process that many rows
         if num_rows is not None:
             df = df.head(num_rows)
 
         total_rows = len(df)
         results = []
-        for index, row in df.iterrows():
-            # Combine prompt and content from Excel "user_prompt" + "/t" + "#待处理的文本内容：" + {row[column_to_process]}
-            combined_prompt = f"##{user_prompt}\n\n ##待处理的文本: {row[column_to_process]}"
+        processed_data = []
 
+        for index, row in df.iterrows():
+            combined_prompt = f"##{user_prompt}\n\n ## 待处理的文本: {row[column_to_process]}"
             print(combined_prompt)
             try:
                 completion = client.chat.completions.create(
                     model=model,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": combined_prompt,
-                        },
-                    ],
+                    messages=[{"role": "user", "content": combined_prompt}],
                 )
-                # Save model output
                 results.append(completion.choices[0].message.content)
+                processed_data.append((index, completion.choices[0].message.content))
+                print(completion.choices[0].message.content)
             except Exception as e:
                 st.error(f"API request failed on row {index + 1}: {e}")
                 results.append("Error: Unable to process this row.")
                 continue
 
-            # Only display the last 10 outputs --
-            if total_rows - index <= 10:
-                with st.expander(f"行 {index + 1} 的Prompt:"):
-                    st.write(combined_prompt)
-
-                with st.expander(f"行 {index + 1} 的输出:"):
-                    # Check if 'completion' has 'choices' and if 'choices' is not empty
-                    if completion.choices[0].message.content:
-                        output_content = completion.choices[0].message.content
-                    else:
-                        output_content = "Error: No completion available or invalid response structure."
-
-                    st.write(output_content)
-
             # Update the progress bar
             progress = int((index + 1) / total_rows * 100)
             progress_bar.progress(progress)
 
-        # Append results to DataFrame
-        df['大模型处理结果'] = results
+            #delete the old xlxs file
+            if index > 0:
+                file_name = f"processed_output_{index}.xlsx"
+                try:
+                    os.remove(file_name)
+                except Exception as e:
+                    pass
 
-        # Once completed, set progress bar to 100%
-        progress_bar.progress(100)
+            # Check to generate download link every ten rows or at the end of the DataFrame
+            if (index + 1) % 1 == 0 or (index + 1) == total_rows:
+                file_name = f"{uploaded_file_name}_处理到第{index + 1}行.xlsx"
+
+                #slice the df to the current index
+                df_slice = df.iloc[:index + 1]
+                #append the results to the df_slice with .loc[row_indexer,col_indexer] = value
+                df_slice.loc[:, '大模型处理结果'] = results
+
+                with pd.ExcelWriter(file_name) as writer:
+                    #pd.DataFrame(df_slice, columns=['index', 'output']).to_excel(writer, index=False)
+                    df_slice.to_excel(writer, index=False)
+
+                # Update the download button in the placeholder
+                with open(file_name, "rb") as file:
+                    download_button_placeholder.download_button(f"Download processed data up to row {index + 1}", file,
+                                                                file_name=file_name, mime="application/vnd.ms-excel")
+
+            #update the df
+        df['大模型处理结果'] = results
 
         return df
 
+    # Example call to your function within a Streamlit script
+    # process_data(df, "column_name", "prompt here")
+
+    def display_download_button():
+        if st.session_state['download_ready']:
+            with open(st.session_state['download_link'], "rb") as file:
+                st.download_button(st.session_state['download_label'], file,
+                                   file_name=st.session_state['download_link'], mime="application/vnd.ms-excel")
     # 处理1行按钮
     if st.button("处理1行试试"):
         if user_prompt:
@@ -142,7 +163,7 @@ if uploaded_file:
             # Process all data
             try:
                 processed_df = process_data(df, column_to_process, user_prompt)
-                output_filename = 'processed_output.xlsx'
+                output_filename = uploaded_file_name.split('.')[0] + '_处理后.xlsx'
                 processed_df.to_excel(output_filename, index=False)
             except Exception as e:
                 st.error(f"Failed to save the processed data: {e}")
