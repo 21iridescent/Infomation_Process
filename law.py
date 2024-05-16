@@ -36,11 +36,18 @@ uploaded_file = st.file_uploader("上传Excel文件", type=["xlsx", "csv"])
 
 # 如果文件已上传，让用户选择要处理的列
 if uploaded_file:
-    # get the file name
-    uploaded_file_name = uploaded_file.name
+    try:
+        if uploaded_file.name.endswith('.xlsx'):
+            df = pd.read_excel(uploaded_file)
+        else:
+            df = pd.read_csv(uploaded_file)
 
-    # 读取Excel文件
-    df = pd.read_excel(uploaded_file)
+    st.write("文件上传成功！")
+
+    # 显示文件内容预览
+    st.write("文件预览：")
+    st.write(df.head())
+
     column_to_process = st.selectbox("选择要处理的列", df.columns)
 
     # Prompt模板列表
