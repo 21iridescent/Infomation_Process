@@ -171,4 +171,4 @@ if uploaded_file:
         else:
             st.error("请输入提示内容。")
 else:
-    st.error("请上传文件。")
+    st.error("请上传文件~")
