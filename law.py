@@ -7,10 +7,10 @@ import os
 # 设置页面
 st.set_page_config(page_title="法律文书批量处理助手", page_icon=":rocket:")
 
-#设置标题
+# 设置标题
 st.title("法律文书批量处理助手")
 
-#api key输入框
+# API key 输入框
 api_key = st.text_input("输入API Key")
 
 # 设置可用模型列表
@@ -30,13 +30,11 @@ st.info("先用Free的模型测试一下，再选择GPT4或者其他贵的模型
 model = st.selectbox("选择模型", available_models)
 
 # 上传Excel文件
-#uploaded_file = st.file_uploader("上传Excel文件", type=["xlsx"])
-
 uploaded_file = st.file_uploader("上传Excel文件", type=["xlsx", "csv"])
 
 # 如果文件已上传，让用户选择要处理的列
 if uploaded_file:
-    # get the file name
+    # 获取文件名
     uploaded_file_name = uploaded_file.name
 
     # 读取Excel文件或者CSV文件
@@ -60,7 +58,6 @@ if uploaded_file:
 
     # 输入Prompt内容，展示默认提示
     user_prompt = st.text_area("输入ChatGPT提示内容：", value=prompt_templates[template_key])
-
 
     # 定义一个函数来处理数据
     def process_data(df, column_to_process, user_prompt, num_rows=None):
@@ -98,7 +95,7 @@ if uploaded_file:
                 )
                 results.append(completion.choices[0].message.content)
                 processed_data.append((index, completion.choices[0].message.content))
-                print(completion.choices[0].message.content)
+                st.write(f"Row {index + 1} result: {completion.choices[0].message.content}")
             except Exception as e:
                 st.error(f"API request failed on row {index + 1}: {e}")
                 results.append("Error: Unable to process this row.")
@@ -108,7 +105,7 @@ if uploaded_file:
             progress = int((index + 1) / total_rows * 100)
             progress_bar.progress(progress)
 
-            #delete the old xlxs file
+            # Delete the old xlxs file
             if index > 0:
                 file_name = f"processed_output_{index}.xlsx"
                 try:
@@ -120,13 +117,12 @@ if uploaded_file:
             if (index + 1) % 1 == 0 or (index + 1) == total_rows:
                 file_name = f"{uploaded_file_name}_处理到第{index + 1}行.xlsx"
 
-                #slice the df to the current index
+                # Slice the df to the current index
                 df_slice = df.iloc[:index + 1]
-                #append the results to the df_slice with .loc[row_indexer,col_indexer] = value
+                # Append the results to the df_slice with .loc[row_indexer,col_indexer] = value
                 df_slice.loc[:, '大模型处理结果'] = results
 
                 with pd.ExcelWriter(file_name) as writer:
-                    #pd.DataFrame(df_slice, columns=['index', 'output']).to_excel(writer, index=False)
                     df_slice.to_excel(writer, index=False)
 
                 # Update the download button in the placeholder
@@ -134,43 +130,31 @@ if uploaded_file:
                     download_button_placeholder.download_button(f"Download processed data up to row {index + 1}", file,
                                                                 file_name=file_name, mime="application/vnd.ms-excel")
 
-            #update the df
         df['大模型处理结果'] = results
 
         return df
 
-    # Example call to your function within a Streamlit script
-    # process_data(df, "column_name", "prompt here")
-
-    def display_download_button():
-        if st.session_state['download_ready']:
-            with open(st.session_state['download_link'], "rb") as file:
-                st.download_button(st.session_state['download_label'], file,
-                                   file_name=st.session_state['download_link'], mime="application/vnd.ms-excel")
     # 处理1行按钮
     if st.button("处理1行试试"):
         if user_prompt:
             # 处理1行作为测试
             results = process_data(df, column_to_process, user_prompt, num_rows=1)
-            # 展示内容
             st.write(results)
-
         else:
             st.error("请输入提示内容。")
 
-    # 处理前5行按钮
+    # 处理前3行按钮
     if st.button("处理前3行试试"):
         if user_prompt:
-            # 处理前5行作为测试
+            # 处理前3行作为测试
             results = process_data(df, column_to_process, user_prompt, num_rows=3)
+            st.write(results)
         else:
             st.error("请输入提示内容。")
-            st.write(results)
 
     # 处理全部数据按钮
     if st.button("测试完了！全部处理（贵贵贵）！"):
         if user_prompt:
-            # Process all data
             try:
                 processed_df = process_data(df, column_to_process, user_prompt)
                 output_filename = uploaded_file_name.split('.')[0] + '_处理后.xlsx'
@@ -178,7 +162,6 @@ if uploaded_file:
             except Exception as e:
                 st.error(f"Failed to save the processed data: {e}")
             else:
-                # Provide a download link
                 st.success("处理完成！")
                 with open(output_filename, "rb") as file:
                     st.download_button(label="下载处理后的Excel文件",
