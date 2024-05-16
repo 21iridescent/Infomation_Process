@@ -24,7 +24,7 @@ available_models = [
     "anthropic/claude-3-opus:beta"
 ]
 
-
+# 在页面顶部添加模型选择框
 st.info("先用Free的模型测试一下，再选择GPT4或者其他贵的模型！模型价格和能力由低到高，建议按顺序先试试。")
 
 model = st.selectbox("选择模型", available_models)
