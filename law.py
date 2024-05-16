@@ -151,7 +151,10 @@ if uploaded_file:
     if st.button("处理1行试试"):
         if user_prompt:
             # 处理1行作为测试
-            process_data(df, column_to_process, user_prompt, num_rows=1)
+            results = process_data(df, column_to_process, user_prompt, num_rows=1)
+            # 展示内容
+            st.write(results)
+
         else:
             st.error("请输入提示内容。")
 
@@ -159,9 +162,10 @@ if uploaded_file:
     if st.button("处理前3行试试"):
         if user_prompt:
             # 处理前5行作为测试
-            process_data(df, column_to_process, user_prompt, num_rows=3)
+            results = process_data(df, column_to_process, user_prompt, num_rows=3)
         else:
             st.error("请输入提示内容。")
+            st.write(results)
 
     # 处理全部数据按钮
     if st.button("测试完了！全部处理（贵贵贵）！"):
