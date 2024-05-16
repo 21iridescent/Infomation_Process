@@ -20,6 +20,7 @@ available_models = [
     "anthropic/claude-3-sonnet:beta",
     "meta-llama/llama-3-70b-instruct",
     "openai/gpt-4-turbo",
+    "openai/gpt-4o",
     "anthropic/claude-3-opus:beta"
 ]
 
